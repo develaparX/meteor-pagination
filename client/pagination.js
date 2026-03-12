@@ -1,5 +1,6 @@
 import { _ } from 'meteor/underscore';
 import { Meteor } from 'meteor/meteor';
+import { Mongo } from 'meteor/mongo';
 import { ReactiveDict } from 'meteor/reactive-dict';
 import { Tracker } from 'meteor/tracker';
 
@@ -27,7 +28,7 @@ function getSubscriptionCount(id, connection) {
   const connectionId = getConnectionId(connection);
   
   if (!Counts.hasOwnProperty(connectionId)) {
-      Counts[connectionId] = new Meteor.Collection('pagination-counts', { connection })
+      Counts[connectionId] = new Mongo.Collection('pagination-counts', { connection });
   }
   
   const doc = Counts[connectionId].findOne(id);
