@@ -165,7 +165,7 @@ class MyListPage extends React.Component {
 
 
 # Demo project
-For an example on how this package can be implemented check [the pagination example project](https://github.com/Kurounin/PaginationExample) or [the react pagination example project](https://github.com/Kurounin/PaginationReactExample).
+For an example on how this package can be implemented check [the pagination example project](https://github.com/develaparX/mtv2-pagination).
 
 You can also checkout [this example application in React](https://github.com/mgscreativa/kurounin-pagination-react-example) created by [mgscreativa](https://github.com/mgscreativa).
 

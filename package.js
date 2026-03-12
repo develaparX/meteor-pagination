@@ -2,7 +2,7 @@ Package.describe({
   name: 'develapar:pagination',
   summary: 'Meteor pagination done right. Usable in ReactJS or Blaze templates.',
   version: '1.2.1',
-  git: 'https://github.com/develapar/Pagination.git',
+  git: 'https://github.com/develaparX/mtv2-pagination.git',
   documentation: 'README.md',
 });
 
