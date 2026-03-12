@@ -1,14 +1,15 @@
 Package.describe({
   name: 'srarfian:pagination',
   summary: 'Meteor pagination done right. Usable in ReactJS or Blaze templates.',
-  version: '1.2.4',
+  version: '1.2.5',
   git: 'https://github.com/develaparX/mtv2-pagination.git',
   documentation: 'README.md',
 });
 
 Package.onUse((api) => {
   // Support Meteor 2.x and 3.x
-  api.versionsFrom(['METEOR@2.0', 'METEOR@3.0']);
+  // Support Meteor 1.2.1+ through Meteor 3.x
+  api.versionsFrom(['METEOR@1.2.1', 'METEOR@2.0', 'METEOR@3.0']);
   
   api.use([
     'ecmascript',
