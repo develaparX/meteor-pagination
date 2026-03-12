@@ -1,7 +1,11 @@
 Kurounin:Pagination
 =================
 
+[![Meteor 2.x Compatible](https://img.shields.io/badge/meteor-2.x-green.svg)](https://meteor.com)
+
 This package allows you to paginate the subscriptions over meteor's collections. It can be used in a Blaze template or in ReactJS.
+
+Compatible with **Meteor 1.2.1+** and **Meteor 2.x**.
 
 
 Features
