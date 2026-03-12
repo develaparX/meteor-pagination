@@ -242,6 +242,16 @@ Available class properties are:
 * `containerClass`: optional container class for the paginator
 
 
+# Changelog
+
+### 1.2.1
+- **Fixed**: Memory leak in server publication (`clearInterval` instead of `clearTimeout`)
+- **Fixed**: Deprecated `Meteor.Collection` replaced with `Mongo.Collection`
+- **Fixed**: `instanceof` check in constructor now uses correct class name
+- **Added**: `destroy()` method for proper cleanup to prevent memory leaks
+- **Added**: Division by zero protection in `totalPages()` method
+- **Updated**: Meteor 2.x compatibility
+
 ### Packages used as inspiration:
 
  * [alethes:pages](https://atmospherejs.com/alethes/pages) for pagination instantiation
