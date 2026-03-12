@@ -184,7 +184,7 @@ You can also checkout [this example application in React](https://github.com/mgs
 * `skip`: set the number of documents that should be skipped when fetching a page (defaults to **0**)
 * `filters`: filters to be applied to the subscription (defaults to **{}**, meaning no filters)
 * `fields`: fields to be returned (defaults to **{}**, meaning all fields)
-* `sort`: set the sorting for retrieved documents (defaults to **{_id: -1}**)
+* `sort`: set the sorting for retrieved documents (defaults to **{_id: 1}**)
 * `reactive`: set the subscription reactivity, allowing to only retrieve the initial results when set to false (defaults to **true**)
 * `debug`: console logs the query and options used when performing the find (defaults to **false**)
 * `connection`: the server connection that will manage this collection. Pass the return value of calling DDP.connect to specify a different server. (defaults to **Meteor.connection**)
@@ -204,6 +204,7 @@ You can also checkout [this example application in React](https://github.com/mgs
 * `ready()`: checks if the subscription for the current page is ready
 * `refresh()`: forcefully refreshes the subscription (useful for non-reactive subscriptions)
 * `getPage()`: returns the documents for the current page
+* `destroy()`: cleanup method to stop subscriptions and prevent memory leaks. Call this when component/template is destroyed (e.g., in `componentWillUnmount` for React or `onDestroyed` for Blaze)
 
 
 # Blaze Paginator template
