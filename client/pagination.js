@@ -38,7 +38,7 @@ function getSubscriptionCount(id, connection) {
 
 class PaginationFactory {
   constructor(collection, settingsIn = {}) {
-    if (!(this instanceof Meteor.Pagination)) {
+    if (!(this instanceof PaginationFactory)) {
       // eslint-disable-next-line max-len
       throw new Meteor.Error(4000, 'The Meteor.Pagination instance has to be initiated with `new`');
     }
