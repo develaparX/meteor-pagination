@@ -303,7 +303,11 @@ The package automatically sanitizes client queries to remove dangerous MongoDB o
 - **Fix**: Use `DEFAULT_LIMIT` constant instead of hardcoded value
 - **Fix**: Validate `transform_filters` returns an array (prevent crash if returns wrong type)
 - **Fix**: Sanitize `settings.filters` (server-side filters) with `sanitizeQuery`
-- **Fix**: Validate `options.sort` to prevent injection via sort operators
+- **Fix**: Sanitize `dynamic_filters` return value (was bypassing security)
+- **Fix**: Validate `options.sort` and `options.fields` to prevent injection
+- **Fix**: `options.limit` undefined - now always defaults to `DEFAULT_LIMIT`
+- **Fix**: Re-validate `limit` after `transform_options` (prevent bypass)
+- **Fix**: Add `countInterval` upper bound (max 60 seconds)
 
 #### Breaking Changes in 1.2.7
 ⚠️ **If you use `perPage` > 1000**: The server now enforces a maximum limit of 1000 documents per page. If you need more, consider using pagination or increasing `MAX_LIMIT` in the source.
