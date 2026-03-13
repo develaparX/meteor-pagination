@@ -258,17 +258,16 @@ class PaginationFactory {
 
   fields(fields) {
     if (arguments.length === 1) {
-      // Prevent prototype pollution in fields
       if (fields && typeof fields === 'object') {
         const safeFields = {};
         Object.keys(fields).forEach(key => {
-          if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype') {
+          if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype' && !FORBIDDEN_OPERATORS.includes(key)) {
             safeFields[key] = fields[key];
           }
         });
         this.settings.set('fields', safeFields);
       } else {
-        this.settings.set('fields', fields);
+        this.settings.set('fields', {});
       }
     } else {
       return this.settings.get('fields');

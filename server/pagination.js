@@ -138,23 +138,28 @@ export function publishPagination(collection, settingsIn) {
     
     // Validate sort option to prevent injection via sort operators
     if (options.sort && typeof options.sort === 'object') {
-      // Check for dangerous keys in sort object
+      const safeSort = {};
       for (const key of Object.keys(options.sort)) {
-        if (FORBIDDEN_OPERATORS.includes(key)) {
-          console.warn(`Pagination: Forbidden operator "${key}" removed from sort`);
-          delete options.sort[key];
+        if (FORBIDDEN_OPERATORS.includes(key) || key === '__proto__' || key === 'constructor' || key === 'prototype') {
+          console.warn(`Pagination: Forbidden key/operator "${key}" removed from sort`);
+          continue;
         }
+        safeSort[key] = options.sort[key];
       }
+      options.sort = safeSort;
     }
     
     // Validate fields option to prevent injection
     if (options.fields && typeof options.fields === 'object') {
+      const safeFields = {};
       for (const key of Object.keys(options.fields)) {
-        if (FORBIDDEN_OPERATORS.includes(key)) {
-          console.warn(`Pagination: Forbidden operator "${key}" removed from fields`);
-          delete options.fields[key];
+        if (FORBIDDEN_OPERATORS.includes(key) || key === '__proto__' || key === 'constructor' || key === 'prototype') {
+          console.warn(`Pagination: Forbidden key/operator "${key}" removed from fields`);
+          continue;
         }
+        safeFields[key] = options.fields[key];
       }
+      options.fields = safeFields;
     }
 
     if (!_.isEmpty(sanitizedQuery)) {
@@ -201,14 +206,16 @@ export function publishPagination(collection, settingsIn) {
 
     if (typeof settings.transform_options === 'function') {
       try {
-        options = settings.transform_options.call(self, filters, options);
-        // Re-validate limit after transform_options (security: prevent removing limit)
-        // Also ensure limit is always an integer
+        const transformedOptions = settings.transform_options.call(self, filters, options);
+        if (!transformedOptions || typeof transformedOptions !== 'object') {
+          console.warn('Pagination: transform_options should return an object, using original options');
+        } else {
+          options = transformedOptions;
+        }
         options.limit = parseInt(options.limit, 10);
         if (isNaN(options.limit) || options.limit < 1 || options.limit > MAX_LIMIT) {
           options.limit = DEFAULT_LIMIT;
         }
-        // Sanitize sort and fields if present after transform
         if (options.sort) options.sort = sanitizeQuery(options.sort);
         if (options.fields) options.fields = sanitizeQuery(options.fields);
       } catch (err) {
