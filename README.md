@@ -2,8 +2,9 @@ srarfian:pagination
 =================
 
 [![Meteor Compatible](https://img.shields.io/badge/meteor-1.2.1%20--%203.x-green.svg)](https://meteor.com)
+[![Version](https://img.shields.io/badge/version-1.2.8-blue.svg)](https://atmospherejs.com/srarfian/pagination)
 
-This is a **fork** of [kurounin:pagination](https://atmospherejs.com/kurounin/pagination) focused on the **core pagination engine** only.
+This is a **security-hardened fork** of [kurounin:pagination](https://atmospherejs.com/kurounin/pagination) focused on the **core pagination engine** with production-ready security protections.
 
 Compatible with **Meteor 1.2.1+**, **Meteor 2.x**, and **Meteor 3.x**.
 
@@ -271,64 +272,110 @@ Available class properties are:
 
 # Security
 
-This package includes several security protections:
+This package includes enterprise-grade security protections against common vulnerabilities:
 
-### NoSQL Injection Protection
-The package automatically sanitizes client queries to remove dangerous MongoDB operators:
-- `$where` - Prevents arbitrary JavaScript execution
-- `$eval` - Prevents server-side code execution  
-- `$function` - Prevents function execution
+## NoSQL Injection Protection
 
-### Rate Limiting / DoS Protection
-- Maximum limit per page: **1000 documents**
-- Invalid limits are clamped to safe values
+All queries sanitized to remove dangerous MongoDB operators:
+- **`$where`** - Prevents arbitrary JavaScript execution in queries
+- **`$eval`** - Prevents server-side code execution
+- **`$function`** - Prevents function execution
 
-### Prototype Pollution Protection
-- Settings objects use `Object.create(null)`
-- Forbidden keys (`__proto__`, `constructor`, `prototype`) are filtered
+Sanitization applied to:
+- Client queries (`query` parameter)
+- Server-side filters (`settings.filters`)
+- Dynamic filters (`dynamic_filters` return value)
+- Transform filters results (`transform_filters` return array)
+- Options (`options.sort`, `options.fields` via `transform_options`)
+
+## Rate Limiting / DoS Protection
+
+| Setting | Minimum | Maximum | Default |
+|---------|---------|---------|---------|
+| Documents per page | 1 | 1000 | 10 |
+| Count update interval | 50ms | 60000ms | 10000ms |
+
+Limits enforced at multiple layers:
+- Client-side validation
+- Server-side enforcement
+- Post-transform validation (after `transform_options`)
+
+## Prototype Pollution Protection
+
+- Server settings: `Object.create(null)` for prototype-less objects
+- Client settings: Forbidden key filtering (`__proto__`, `constructor`, `prototype`)
+- Client fields: Additional prototype pollution protection in `fields()` method
+
+## Error Handling
+
+All errors properly propagated to client with descriptive messages:
+- Error codes 4000-4006 for specific failure modes
+- Database errors propagated via `self.error()`
+- Transform function errors caught and reported
 
 # Changelog
 
-### 1.2.7 (2026-03-13)
-- **Security**: Fixed NoSQL injection vulnerability (removed `$where`, `$eval`, `$function` operators)
-- **Security**: Added limit validation (max 1000 docs per page) to prevent DoS attacks
-- **Security**: Fixed prototype pollution vulnerability in settings (server & client)
-- **Fix**: Prevented memory leak using WeakMap for connection tracking
-- **Fix**: Added error handling for `dynamic_filters`, `transform_filters`, `transform_options`
-- **Fix**: Fixed typo in error messages ("needs" → "need")
-- **Fix**: Added null check for `dynamic_filters` return value
-- **Fix**: Removed unused `connectionRegistry` and `getConnectionId` (dead code cleanup)
-- **Fix**: Fixed non-reactive mode missing cleanup - added `self.onStop()` and error handling
-- **Fix**: Fixed `_.throttle` missing trailing option - count now always updates on subscription stop
-- **Fix**: Use `DEFAULT_LIMIT` constant instead of hardcoded value
-- **Fix**: Validate `transform_filters` returns an array (prevent crash if returns wrong type)
-- **Fix**: Sanitize `settings.filters` (server-side filters) with `sanitizeQuery`
-- **Fix**: Sanitize `dynamic_filters` return value (was bypassing security)
-- **Fix**: Validate `options.sort` and `options.fields` to prevent injection
-- **Fix**: `options.limit` undefined - now always defaults to `DEFAULT_LIMIT`
-- **Fix**: Re-validate `limit` after `transform_options` (prevent bypass)
-- **Fix**: Add `countInterval` upper bound (max 60 seconds)
-- **Fix**: `sanitizeQuery` destroying `Date`/`ObjectId`/`RegExp` (preserve MongoDB types)
-- **Fix**: Add error handling for `observeChanges` (prevent subscription crash)
-- **Fix**: Client-side `perPage` validation (must be positive integer)
-- **Fix**: Client-side `currentPage` validation (must be positive integer)
-- **Fix**: `options.limit` type coercion after `transform_options` (always integer)
-- **Fix**: Sanitize `transform_filters` return array (each filter sanitized)
-- **Fix**: Sanitize `transform_options` `sort` and `fields` after transform
-- **Fix**: Client-side `skip` validation (must be non-negative integer)
-- **Fix**: Client-side `fields` prototype pollution protection
-- **Fix**: Error propagation in non-reactive mode (use `self.error`)
-- **Fix**: Error handling consistency in reactive mode (use `self.error` for observeChanges)
-- **Fix**: Add try-catch for countCursor creation
-- **Fix**: Filter out null/undefined from `transform_filters` result before sanitizing
-- **Fix**: Client-side defensive programming (handle undefined values in Tracker.autorun)
-- **Fix**: Add check for `subscription.subscriptionId` in `getPage`
-- **Fix**: Better initialization with fallback values for `currentPage`, `perPage`, `skip`
+### 1.2.8 (2026-03-13) - Security & Stability Release
 
-#### Breaking Changes in 1.2.7
-⚠️ **If you use `perPage` > 1000**: The server now enforces a maximum limit of 1000 documents per page. If you need more, consider using pagination or increasing `MAX_LIMIT` in the source.
+#### 🔴 Security Fixes
+- **NoSQL Injection Protection**: Removed dangerous MongoDB operators (`$where`, `$eval`, `$function`) from all query paths
+- **Query Sanitization**: All filters (client query, `settings.filters`, `dynamic_filters`, `transform_filters` results) now sanitized
+- **Options Sanitization**: `options.sort` and `options.fields` validated for forbidden operators
+- **Transform Sanitization**: `transform_options` return values sanitized (sort, fields)
+- **Transform Filters Sanitization**: Each filter in `transform_filters` return array individually sanitized
+- **Prototype Pollution Protection**: Server settings use `Object.create(null)`, client filters forbidden keys
+- **Limit Bypass Prevention**: Re-validate limit after `transform_options` execution
+- **Rate Limiting**: Maximum 1000 documents per page, minimum 50ms count interval, maximum 60s count interval
 
-⚠️ **If you rely on `$where` in client queries**: This operator is now blocked for security. Use standard MongoDB queries instead.
+#### 🟠 Stability Fixes
+- **Error Handling**: Try-catch untuk `dynamic_filters`, `transform_filters`, `transform_options` execution
+- **Database Error Handling**: Try-catch untuk `observeChanges` dan count cursor creation
+- **Error Propagation**: Gunakan `self.error()` untuk propagate error ke client (reactive & non-reactive)
+- **Type Preservation**: `sanitizeQuery` preservasi `Date`, `ObjectId`, `RegExp` objects
+- **Memory Leak Fix**: WeakMap untuk `Counts` dengan automatic garbage collection
+- **Non-Reactive Cleanup**: `self.onStop()` untuk non-reactive mode
+- **Observer Cleanup**: `handle.stop()` dalam `self.onStop()` dengan null check
+- **Throttle Fix**: `_.throttle` dengan `{ trailing: true }` untuk pastikan count terakhir ter-update
+
+#### 🟡 Validation Fixes
+- **Limit Validation**: Selalu default ke 10 jika undefined/invalid, parseInt untuk type coercion
+- **Transform Filters Validation**: Validasi return array, filter null/undefined items
+- **Transform Options Validation**: Re-validate limit setelah transform
+- **countInterval Validation**: Clamp antara 50ms - 60000ms
+- **Client currentPage Validation**: Harus positive integer
+- **Client perPage Validation**: Harus positive integer  
+- **Client skip Validation**: Harus non-negative integer
+
+#### 🟢 Defensive Programming
+- **Null Checks**: Check `subscription.subscriptionId` sebelum pakai
+- **Undefined Handling**: Fallback values di Tracker.autorun untuk `currentPage`, `perPage`, `skip`
+- **Initialization**: Default values dengan fallback untuk semua settings
+- **Fields Protection**: Prototype pollution protection di client `fields()` method
+
+#### 🔵 Code Quality
+- **Dead Code Removal**: Hapus `connectionRegistry` dan `getConnectionId`
+- **Constants**: Gunakan `DEFAULT_LIMIT` constant instead of hardcoded 10
+- **Typo Fix**: "needs" → "need" di error messages
+- **Error Codes**: Unique error codes (4000-4006) untuk berbagai error types
+
+### 1.2.7
+- See 1.2.8 changelog (security release)
+
+#### Breaking Changes in 1.2.8
+
+⚠️ **Maximum 1000 documents per page**: Server enforces hard limit. Override by modifying `MAX_LIMIT` constant in source if truly needed.
+
+⚠️ **Forbidden operators blocked**: `$where`, `$eval`, `$function` operators are stripped from all queries. Use alternative query patterns.
+
+⚠️ **Transform functions must return valid types**: 
+- `transform_filters` must return an array
+- `transform_options` sort/fields are sanitized after execution
+- `dynamic_filters` must return an object (not null)
+
+⚠️ **Stricter input validation**: 
+- `perPage`, `currentPage` must be positive integers
+- `skip` must be non-negative integer
+- Invalid values are rejected with console warnings
 
 ### 1.2.6
 - **Fixed**: Memory leak in server publication (`clearInterval` instead of `clearTimeout`)
