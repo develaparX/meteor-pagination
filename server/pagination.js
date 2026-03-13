@@ -189,8 +189,8 @@ export function publishPagination(collection, settingsIn) {
         const transformed = settings.transform_filters.call(self, filters, options);
         // Validate that transform_filters returns an array
         if (Array.isArray(transformed)) {
-          // Sanitize each filter in the array
-          filters = transformed.map(sanitizeQuery);
+          // Sanitize each filter in the array (filter out null/undefined)
+          filters = transformed.filter(f => f != null).map(sanitizeQuery);
         } else {
           console.warn('Pagination: transform_filters should return an array, using original filters');
         }
@@ -265,9 +265,18 @@ export function publishPagination(collection, settingsIn) {
       });
     } else {
       const subscriptionId = `sub_${self._subscriptionId}`;
-      const countCursor = collection.find(findQuery, {fields: {_id: 1}});
+      let countCursor;
+      let initialCount;
+      try {
+        countCursor = collection.find(findQuery, {fields: {_id: 1}});
+        initialCount = countCursor.count();
+      } catch (err) {
+        console.error('Pagination: Error creating count cursor:', err.message);
+        self.error(new Meteor.Error(500, `Query error: ${err.message}`));
+        return;
+      }
 
-      self.added(countCollectionName, subscriptionId, {count: countCursor.count()});
+      self.added(countCollectionName, subscriptionId, {count: initialCount});
 
       const updateCount = _.throttle(Meteor.bindEnvironment(()=> {
         self.changed(countCollectionName, subscriptionId, {count: countCursor.count()});
@@ -294,7 +303,7 @@ export function publishPagination(collection, settingsIn) {
         });
       } catch (err) {
         console.error('Pagination: Error in observeChanges:', err.message);
-        self.ready();
+        self.error(new Meteor.Error(500, `Observation error: ${err.message}`));
         return;
       }
 
