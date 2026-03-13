@@ -1,7 +1,7 @@
 Package.describe({
   name: 'srarfian:pagination',
   summary: 'Meteor pagination done right. Usable in ReactJS or Blaze templates.',
-  version: '1.2.6',
+  version: '1.2.7',
   git: 'https://github.com/develaparX/meteor-pagination.git',
   documentation: 'README.md',
 });

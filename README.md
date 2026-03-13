@@ -20,6 +20,7 @@ Features
 + **Easy integration**. The package works out of the box. Page changes are triggered by a single reactive dictionary variable.
 + **Multiple collections per page**. Each Pagination instance runs independently. You can even create multiple paginations for one collection on a single page.
 + **Lightweight core package**. This package only contains the core pagination logic (server publication + client subscription). UI components (paginator buttons/templates) need to be implemented separately or use existing libraries.
++ **Security hardened**. Built-in protections against NoSQL injection, prototype pollution, and DoS attacks.
 
 # Installation
 
@@ -268,7 +269,39 @@ Available class properties are:
 * `containerClass`: optional container class for the paginator
 
 
+# Security
+
+This package includes several security protections:
+
+### NoSQL Injection Protection
+The package automatically sanitizes client queries to remove dangerous MongoDB operators:
+- `$where` - Prevents arbitrary JavaScript execution
+- `$eval` - Prevents server-side code execution  
+- `$function` - Prevents function execution
+
+### Rate Limiting / DoS Protection
+- Maximum limit per page: **1000 documents**
+- Invalid limits are clamped to safe values
+
+### Prototype Pollution Protection
+- Settings objects use `Object.create(null)`
+- Forbidden keys (`__proto__`, `constructor`, `prototype`) are filtered
+
 # Changelog
+
+### 1.2.7
+- **Security**: Fixed NoSQL injection vulnerability (removed `$where`, `$eval`, `$function` operators)
+- **Security**: Added limit validation (max 1000 docs per page) to prevent DoS attacks
+- **Security**: Fixed prototype pollution vulnerability in settings
+- **Fix**: Prevented memory leak using WeakMap for connection tracking
+- **Fix**: Added error handling for `dynamic_filters`, `transform_filters`, `transform_options`
+- **Fix**: Fixed typo in error messages ("needs" → "need")
+- **Fix**: Added null check for `dynamic_filters` return value
+
+#### Breaking Changes in 1.2.7
+⚠️ **If you use `perPage` > 1000**: The server now enforces a maximum limit of 1000 documents per page. If you need more, consider using pagination or increasing `MAX_LIMIT` in the source.
+
+⚠️ **If you rely on `$where` in client queries**: This operator is now blocked for security. Use standard MongoDB queries instead.
 
 ### 1.2.6
 - **Fixed**: Memory leak in server publication (`clearInterval` instead of `clearTimeout`)
