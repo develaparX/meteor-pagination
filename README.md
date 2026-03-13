@@ -318,6 +318,9 @@ The package automatically sanitizes client queries to remove dangerous MongoDB o
 - **Fix**: Client-side `skip` validation (must be non-negative integer)
 - **Fix**: Client-side `fields` prototype pollution protection
 - **Fix**: Error propagation in non-reactive mode (use `self.error`)
+- **Fix**: Error handling consistency in reactive mode (use `self.error` for observeChanges)
+- **Fix**: Add try-catch for countCursor creation
+- **Fix**: Filter out null/undefined from `transform_filters` result before sanitizing
 
 #### Breaking Changes in 1.2.7
 ⚠️ **If you use `perPage` > 1000**: The server now enforces a maximum limit of 1000 documents per page. If you need more, consider using pagination or increasing `MAX_LIMIT` in the source.
