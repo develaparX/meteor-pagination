@@ -2,7 +2,7 @@ srarfian:pagination
 =================
 
 [![Meteor Compatible](https://img.shields.io/badge/meteor-1.2.1%20--%203.x-green.svg)](https://meteor.com)
-[![Version](https://img.shields.io/badge/version-1.2.9-blue.svg)](https://atmospherejs.com/srarfian/pagination)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://atmospherejs.com/srarfian/pagination)
 
 This is a **security-hardened fork** of [kurounin:pagination](https://atmospherejs.com/kurounin/pagination) focused on the **core pagination engine** with production-ready security protections.
 
@@ -314,6 +314,18 @@ All errors properly propagated to client with descriptive messages:
 - Transform function errors caught and reported
 
 # Changelog
+
+### 1.3.0 (2026-03-13) - Critical Security & Bug Fixes
+
+#### 🔴 Critical Fixes
+- **Publication Error Handling**: Changed `throw` to `self.error()` + `return` to prevent publication crash
+- **sanitizeQuery Prototype Pollution**: Added `__proto__`, `constructor`, `prototype` checks
+
+#### 🟠 Stability Fixes
+- **Skip DoS Protection**: Added `MAX_SKIP` (100000) limit to prevent DoS attacks
+- **Sort Validation**: Default to `{_id: 1}` for invalid/non-object input
+- **getPage() Edge Case**: Fixed auto-page logic when `totalItems=0`
+- **Cursor Cleanup**: Set `countCursor = null` in `onStop()` for proper cleanup
 
 ### 1.2.9 (2026-03-13) - Security Hardening Update
 
