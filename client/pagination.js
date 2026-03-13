@@ -9,9 +9,6 @@ const Collection = Mongo?.Collection || Meteor.Collection;
 // Use WeakMap for automatic garbage collection when connections are closed
 const Counts = new WeakMap();
 
-// Map to store connectionId -> connection for cleanup tracking
-const connectionRegistry = new Map();
-
 function getConnectionId(connection) {
   if (typeof connection._stream === 'object') {
     if (
@@ -52,20 +49,31 @@ class PaginationFactory {
     this.connection = settingsIn && settingsIn.connection ? settingsIn.connection : Meteor.connection;
     this.collection = collection;
     this.settings = new ReactiveDict();
-    const settings = _.extend(
-      {
-        name: collection._name,
-        page: 1,
-        perPage: 10,
-        filters: {},
-        fields: {},
-        skip: 0,
-        sort: { _id: 1 },
-        reactive: true,
-        debug: false
-      },
-      settingsIn || {}
-    );
+    
+    // Safe merge with prototype pollution protection
+    const defaults = {
+      name: collection._name,
+      page: 1,
+      perPage: 10,
+      filters: {},
+      fields: {},
+      skip: 0,
+      sort: { _id: 1 },
+      reactive: true,
+      debug: false
+    };
+    
+    const settings = Object.assign({}, defaults);
+    if (settingsIn && typeof settingsIn === 'object') {
+      Object.keys(settingsIn).forEach(key => {
+        // Prevent prototype pollution
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+          console.warn(`Pagination: Forbidden key "${key}" ignored in settings`);
+          return;
+        }
+        settings[key] = settingsIn[key];
+      });
+    }
 
     this.settings.set('name', settings.name);
 

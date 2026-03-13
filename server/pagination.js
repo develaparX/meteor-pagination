@@ -7,6 +7,9 @@ const countCollectionName = 'pagination-counts';
 // Maximum documents per page (DoS protection)
 const MAX_LIMIT = 1000;
 
+// Default limit if not specified or invalid
+const DEFAULT_LIMIT = 10;
+
 // Forbidden MongoDB operators for security
 const FORBIDDEN_OPERATORS = ['$where', '$eval', '$function'];
 
@@ -172,15 +175,31 @@ export function publishPagination(collection, settingsIn) {
 
     if (!options.reactive) {
       const subscriptionId = `sub_${self._subscriptionId}`;
-      const count = collection.find(findQuery, {fields: {_id: 1}}).count();
-      const docs = collection.find(findQuery, options).fetch();
+      
+      let count = 0;
+      let docs = [];
+      
+      try {
+        count = collection.find(findQuery, {fields: {_id: 1}}).count();
+        docs = collection.find(findQuery, options).fetch();
+      } catch (err) {
+        console.error('Pagination: Error fetching non-reactive data:', err.message);
+        self.ready();
+        return;
+      }
 
       self.added(countCollectionName, subscriptionId, {count: count});
 
       _.each(docs, function(doc) {
         self.added(collection._name, doc._id, doc);
-
         self.changed(collection._name, doc._id, {[subscriptionId]: 1});
+      });
+      
+      // Cleanup function for non-reactive mode (needed for proper subscription cleanup)
+      self.onStop(() => {
+        if (options.debug) {
+          console.log('Pagination', settings.name, 'non-reactive subscription stopped');
+        }
       });
     } else {
       const subscriptionId = `sub_${self._subscriptionId}`;
@@ -190,7 +209,7 @@ export function publishPagination(collection, settingsIn) {
 
       const updateCount = _.throttle(Meteor.bindEnvironment(()=> {
         self.changed(countCollectionName, subscriptionId, {count: countCursor.count()});
-      }), 50);
+      }), 50, { trailing: true });
       const countTimer = Meteor.setInterval(function() {
         updateCount();
       }, settings.countInterval);
