@@ -93,6 +93,9 @@ export function publishPagination(collection, settingsIn) {
   if (settings.countInterval < 50) {
     settings.countInterval = 50;
   }
+  if (settings.countInterval > 60000) {
+    settings.countInterval = 60000; // Max 1 minute
+  }
 
   Meteor.publish(settings.name, function addPub(query = {}, optionsInput = {}) {
     check(query, Match.Optional(Object));
@@ -106,12 +109,15 @@ export function publishPagination(collection, settingsIn) {
     // Sanitize query to prevent NoSQL injection
     const sanitizedQuery = sanitizeQuery(query || {});
     
-    // Enforce limit to prevent DoS
+    // Enforce limit to prevent DoS (always set a default)
     if (options.limit) {
       options.limit = Math.min(parseInt(options.limit, 10), MAX_LIMIT);
       if (isNaN(options.limit) || options.limit < 1) {
         options.limit = DEFAULT_LIMIT;
       }
+    } else {
+      // If no limit provided, use default
+      options.limit = DEFAULT_LIMIT;
     }
     
     // Validate sort option to prevent injection via sort operators
@@ -121,6 +127,16 @@ export function publishPagination(collection, settingsIn) {
         if (FORBIDDEN_OPERATORS.includes(key)) {
           console.warn(`Pagination: Forbidden operator "${key}" removed from sort`);
           delete options.sort[key];
+        }
+      }
+    }
+    
+    // Validate fields option to prevent injection
+    if (options.fields && typeof options.fields === 'object') {
+      for (const key of Object.keys(options.fields)) {
+        if (FORBIDDEN_OPERATORS.includes(key)) {
+          console.warn(`Pagination: Forbidden operator "${key}" removed from fields`);
+          delete options.fields[key];
         }
       }
     }
@@ -142,8 +158,10 @@ export function publishPagination(collection, settingsIn) {
     }
 
     if (typeof dynamic_filters === 'object' && dynamic_filters !== null) {
-      if (!_.isEmpty(dynamic_filters)) {
-        filters.push(dynamic_filters);
+      // Sanitize dynamic_filters to prevent injection
+      const sanitizedDynamicFilters = sanitizeQuery(dynamic_filters);
+      if (!_.isEmpty(sanitizedDynamicFilters)) {
+        filters.push(sanitizedDynamicFilters);
       }
     } else {
       // eslint-disable-next-line max-len
@@ -167,6 +185,10 @@ export function publishPagination(collection, settingsIn) {
     if (typeof settings.transform_options === 'function') {
       try {
         options = settings.transform_options.call(self, filters, options);
+        // Re-validate limit after transform_options (security: prevent removing limit)
+        if (!options.limit || options.limit > MAX_LIMIT) {
+          options.limit = DEFAULT_LIMIT;
+        }
       } catch (err) {
         throw new Meteor.Error(4006, `transform_options execution failed: ${err.message}`);
       }
