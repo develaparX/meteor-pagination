@@ -9,6 +9,36 @@ const Collection = Mongo?.Collection || Meteor.Collection;
 // Default limit for pagination
 const DEFAULT_LIMIT = 10;
 
+const FORBIDDEN_OPERATORS = ['$where', '$eval', '$function'];
+
+function sanitizeClientQuery(obj) {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+  
+  if (obj instanceof Date || obj instanceof RegExp) {
+    return obj;
+  }
+  
+  if (obj._str || (typeof obj.toHexString === 'function')) {
+    return obj;
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeClientQuery);
+  }
+  
+  const sanitized = {};
+  for (const key of Object.keys(obj)) {
+    if (FORBIDDEN_OPERATORS.includes(key) || key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      console.warn(`Pagination: Forbidden key/operator "${key}" removed from query`);
+      continue;
+    }
+    sanitized[key] = sanitizeClientQuery(obj[key]);
+  }
+  return sanitized;
+}
+
 // Use WeakMap for automatic garbage collection when connections are closed
 const Counts = new WeakMap();
 
@@ -219,7 +249,8 @@ class PaginationFactory {
 
   filters(filters) {
     if (arguments.length === 1) {
-      this.settings.set('filters', !_.isEmpty(filters) ? filters : {});
+      const sanitized = !_.isEmpty(filters) ? sanitizeClientQuery(filters) : {};
+      this.settings.set('filters', sanitized);
     } else {
       return this.settings.get('filters');
     }
@@ -260,7 +291,20 @@ class PaginationFactory {
 
   sort(sort) {
     if (arguments.length === 1) {
-      this.settings.set('sort', sort);
+      if (sort && typeof sort === 'object') {
+        const safeSort = {};
+        Object.keys(sort).forEach(key => {
+          if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype') {
+            const val = sort[key];
+            if (typeof val === 'number' || typeof val === 'string') {
+              safeSort[key] = val;
+            }
+          }
+        });
+        this.settings.set('sort', safeSort);
+      } else {
+        this.settings.set('sort', sort);
+      }
     } else {
       return this.settings.get('sort');
     }

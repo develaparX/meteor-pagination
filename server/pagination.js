@@ -252,16 +252,23 @@ export function publishPagination(collection, settingsIn) {
 
       self.added(countCollectionName, subscriptionId, {count: count});
 
+      const docIds = _.pluck(docs, '_id');
       _.each(docs, function(doc) {
         self.added(collection._name, doc._id, doc);
         self.changed(collection._name, doc._id, {[subscriptionId]: 1});
       });
       
-      // Cleanup function for non-reactive mode (needed for proper subscription cleanup)
       self.onStop(() => {
         if (options.debug) {
           console.log('Pagination', settings.name, 'non-reactive subscription stopped');
         }
+        _.each(docIds, function(id) {
+          try {
+            self.changed(collection._name, id, {[subscriptionId]: 0});
+          } catch (e) {
+            // Ignore errors during cleanup
+          }
+        });
       });
     } else {
       const subscriptionId = `sub_${self._subscriptionId}`;
@@ -278,25 +285,33 @@ export function publishPagination(collection, settingsIn) {
 
       self.added(countCollectionName, subscriptionId, {count: initialCount});
 
+      let isStopped = false;
       const updateCount = _.throttle(Meteor.bindEnvironment(()=> {
-        self.changed(countCollectionName, subscriptionId, {count: countCursor.count()});
+        if (!isStopped) {
+          self.changed(countCollectionName, subscriptionId, {count: countCursor.count()});
+        }
       }), 50, { trailing: true });
       const countTimer = Meteor.setInterval(function() {
-        updateCount();
+        if (!isStopped) {
+          updateCount();
+        }
       }, settings.countInterval);
       let handle;
       try {
         handle = collection.find(findQuery, options).observeChanges({
           added(id, fields) {
+            if (isStopped) return;
             self.added(collection._name, id, fields);
 
             self.changed(collection._name, id, {[subscriptionId]: 1});
             updateCount();
           },
           changed(id, fields) {
+            if (isStopped) return;
             self.changed(collection._name, id, fields);
           },
           removed(id) {
+            if (isStopped) return;
             self.removed(collection._name, id);
             updateCount();
           }
@@ -308,6 +323,7 @@ export function publishPagination(collection, settingsIn) {
       }
 
       self.onStop(() => {
+        isStopped = true;
         Meteor.clearInterval(countTimer);
         if (handle) {
           handle.stop();
