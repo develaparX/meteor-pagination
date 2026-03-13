@@ -184,8 +184,12 @@ class PaginationFactory {
 
   currentPage(page) {
     if (arguments.length === 1) {
-      if (page >= 1) {
-        this.settings.set('page', page);
+      // Validate page - must be positive integer
+      const validated = parseInt(page, 10);
+      if (!isNaN(validated) && validated >= 1) {
+        this.settings.set('page', validated);
+      } else {
+        console.warn('Pagination: Invalid page, must be positive integer');
       }
     } else {
       return this.settings.get('page');
@@ -194,7 +198,13 @@ class PaginationFactory {
 
   perPage(perPage) {
     if (arguments.length === 1) {
-      this.settings.set('perPage', perPage);
+      // Validate perPage - must be positive integer
+      const validated = parseInt(perPage, 10);
+      if (!isNaN(validated) && validated >= 1) {
+        this.settings.set('perPage', validated);
+      } else {
+        console.warn('Pagination: Invalid perPage, must be positive integer');
+      }
     } else {
       return this.settings.get('perPage');
     }

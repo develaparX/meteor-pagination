@@ -16,9 +16,25 @@ const FORBIDDEN_OPERATORS = ['$where', '$eval', '$function'];
 /**
  * Sanitize query to prevent NoSQL injection
  * Removes forbidden MongoDB operators recursively
+ * Preserves Date, ObjectId, and other special MongoDB types
  */
 function sanitizeQuery(obj) {
   if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+  
+  // Preserve Date objects
+  if (obj instanceof Date) {
+    return obj;
+  }
+  
+  // Preserve Mongo ObjectId (check for _str property or hex string pattern)
+  if (obj._str || (typeof obj.toHexString === 'function')) {
+    return obj;
+  }
+  
+  // Preserve RegExp
+  if (obj instanceof RegExp) {
     return obj;
   }
   
@@ -186,7 +202,9 @@ export function publishPagination(collection, settingsIn) {
       try {
         options = settings.transform_options.call(self, filters, options);
         // Re-validate limit after transform_options (security: prevent removing limit)
-        if (!options.limit || options.limit > MAX_LIMIT) {
+        // Also ensure limit is always an integer
+        options.limit = parseInt(options.limit, 10);
+        if (isNaN(options.limit) || options.limit < 1 || options.limit > MAX_LIMIT) {
           options.limit = DEFAULT_LIMIT;
         }
       } catch (err) {
@@ -253,25 +271,34 @@ export function publishPagination(collection, settingsIn) {
       const countTimer = Meteor.setInterval(function() {
         updateCount();
       }, settings.countInterval);
-      const handle = collection.find(findQuery, options).observeChanges({
-        added(id, fields) {
-          self.added(collection._name, id, fields);
+      let handle;
+      try {
+        handle = collection.find(findQuery, options).observeChanges({
+          added(id, fields) {
+            self.added(collection._name, id, fields);
 
-          self.changed(collection._name, id, {[subscriptionId]: 1});
-          updateCount();
-        },
-        changed(id, fields) {
-          self.changed(collection._name, id, fields);
-        },
-        removed(id) {
-          self.removed(collection._name, id);
-          updateCount();
-        }
-      });
+            self.changed(collection._name, id, {[subscriptionId]: 1});
+            updateCount();
+          },
+          changed(id, fields) {
+            self.changed(collection._name, id, fields);
+          },
+          removed(id) {
+            self.removed(collection._name, id);
+            updateCount();
+          }
+        });
+      } catch (err) {
+        console.error('Pagination: Error in observeChanges:', err.message);
+        self.ready();
+        return;
+      }
 
       self.onStop(() => {
         Meteor.clearInterval(countTimer);
-        handle.stop();
+        if (handle) {
+          handle.stop();
+        }
       });
     }
 
