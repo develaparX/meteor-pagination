@@ -308,6 +308,11 @@ The package automatically sanitizes client queries to remove dangerous MongoDB o
 - **Fix**: `options.limit` undefined - now always defaults to `DEFAULT_LIMIT`
 - **Fix**: Re-validate `limit` after `transform_options` (prevent bypass)
 - **Fix**: Add `countInterval` upper bound (max 60 seconds)
+- **Fix**: `sanitizeQuery` destroying `Date`/`ObjectId`/`RegExp` (preserve MongoDB types)
+- **Fix**: Add error handling for `observeChanges` (prevent subscription crash)
+- **Fix**: Client-side `perPage` validation (must be positive integer)
+- **Fix**: Client-side `currentPage` validation (must be positive integer)
+- **Fix**: `options.limit` type coercion after `transform_options` (always integer)
 
 #### Breaking Changes in 1.2.7
 ⚠️ **If you use `perPage` > 1000**: The server now enforces a maximum limit of 1000 documents per page. If you need more, consider using pagination or increasing `MAX_LIMIT` in the source.
