@@ -292,11 +292,14 @@ The package automatically sanitizes client queries to remove dangerous MongoDB o
 ### 1.2.7
 - **Security**: Fixed NoSQL injection vulnerability (removed `$where`, `$eval`, `$function` operators)
 - **Security**: Added limit validation (max 1000 docs per page) to prevent DoS attacks
-- **Security**: Fixed prototype pollution vulnerability in settings
+- **Security**: Fixed prototype pollution vulnerability in settings (server & client)
 - **Fix**: Prevented memory leak using WeakMap for connection tracking
 - **Fix**: Added error handling for `dynamic_filters`, `transform_filters`, `transform_options`
 - **Fix**: Fixed typo in error messages ("needs" → "need")
 - **Fix**: Added null check for `dynamic_filters` return value
+- **Fix**: Removed unused `connectionRegistry` variable (dead code cleanup)
+- **Fix**: Fixed non-reactive mode missing cleanup - added `self.onStop()` and error handling
+- **Fix**: Fixed `_.throttle` missing trailing option - count now always updates on subscription stop
 
 #### Breaking Changes in 1.2.7
 ⚠️ **If you use `perPage` > 1000**: The server now enforces a maximum limit of 1000 documents per page. If you need more, consider using pagination or increasing `MAX_LIMIT` in the source.
